@@ -4,4 +4,3 @@
 *.db
 .git
 docs/screenshots
-frontend/dist
