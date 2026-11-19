@@ -1,0 +1,32 @@
+# One command, full stack (API + UI + PostgreSQL):
+#     docker compose up --build        ->  http://localhost:8000
+#
+# Demo mode (default): role switcher, no passwords, synthetic data only.
+# Pilot mode:          AUTH_MODE=secure + SECRET_KEY + one password per role (see docs/DEPLOY.md).
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: curaloop
+      POSTGRES_PASSWORD: curaloop
+      POSTGRES_DB: curaloop
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U curaloop"]
+      interval: 5s
+      retries: 10
+  app:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql+psycopg://curaloop:curaloop@db:5432/curaloop
+      AUTH_MODE: ${AUTH_MODE:-demo}
+      SECRET_KEY: ${SECRET_KEY:-}
+      CURALOOP_PW_COORDINATOR: ${CURALOOP_PW_COORDINATOR:-}
+      CURALOOP_PW_FACILITY: ${CURALOOP_PW_FACILITY:-}
+      CURALOOP_PW_MANAGER: ${CURALOOP_PW_MANAGER:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports: ["8000:8000"]
+volumes:
+  pgdata:
