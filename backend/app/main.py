@@ -660,6 +660,9 @@ EVIDENCE = [
 ]
 
 
+_IMPACT_CACHE: dict = {}
+
+
 @app.get("/api/impact")
 def impact(calls: int | None = None, asha_visits: int | None = None, annual_screen_positive: int = 10000,
            baseline_closure: float = 0.55, db: Session = Depends(get_db)):
@@ -671,7 +674,13 @@ def impact(calls: int | None = None, asha_visits: int | None = None, annual_scre
     c = calls if calls is not None else rules["capacity"]["calls"]
     v = asha_visits if asha_visits is not None else rules["capacity"]["asha_visits"]
     items, _ = _planner_items(db, now, rules)
-    res = simulate.impact(items, calls=c, visits=v, days=30, n_sims=80)
+    sig = (c, v, len(items), round(sum(i["base_p"] for i in items), 3), round(sum(i["age_rank"] for i in items), 1))
+    res = _IMPACT_CACHE.get(sig)
+    if res is None:                                   # CPU-heavy: cache per unchanged worklist
+        res = simulate.impact(items, calls=c, visits=v, days=30, n_sims=60, sweep_sims=30)
+        if len(_IMPACT_CACHE) > 24:
+            _IMPACT_CACHE.pop(next(iter(_IMPACT_CACHE)))
+        _IMPACT_CACHE[sig] = res
     n, closed_sq = res["open_cases"], res["closed_by_day"]["status_quo"]
     stuck = max(n - closed_sq, 1e-9)
     proj = []

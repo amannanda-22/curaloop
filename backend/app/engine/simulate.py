@@ -83,7 +83,7 @@ def run(items: list[dict], *, calls_per_day: int, visits_per_day: int, days: int
     }
 
 
-def impact(items: list[dict], *, calls: int, visits: int, days: int = 30, n_sims: int = 120, seed: int = 11) -> dict:
+def impact(items: list[dict], *, calls: int, visits: int, days: int = 30, n_sims: int = 60, sweep_sims: int = 30, seed: int = 11) -> dict:
     """Policy comparison on the SAME open cases with common random numbers (paired).
 
     status_quo : nobody works the list (patients close only at the natural survival hazard)
@@ -107,9 +107,11 @@ def impact(items: list[dict], *, calls: int, visits: int, days: int = 30, n_sims
     n = len(items)
     sweep = []
     for scale in (0.0, 0.25, 0.5, 0.75, 1.0):
-        r = go(calls_per_day=calls, visits_per_day=visits, effect_scale=scale)
-        d = np.array(r["finals"]) - sq_f
+        r = run(items, days=days, n_sims=sweep_sims, seed=seed, return_finals=True,
+                calls_per_day=calls, visits_per_day=visits, effect_scale=scale)
+        d = np.array(r["finals"]) - sq_f[:sweep_sims]
         sweep.append({"scale": scale, "gain_mean": round(float(d.mean()), 1), "gain_lo": round(float(np.percentile(d, 5)), 1)})
+    # the sweep reuses the first `sweep_sims` runs of the baseline (same seed => same random numbers)
     still_open_sq = max(n - float(sq_f.mean()), 1e-9)
     recovered = float(cl_f.mean() - sq_f.mean())
     return {
