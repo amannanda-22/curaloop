@@ -1,5 +1,7 @@
 # CuraLoop
 
+![CI](../../actions/workflows/ci.yml/badge.svg)
+
 **A screened patient is not a treated patient.** CuraLoop tracks every screen-positive person from the camp to a confirmed visit at the facility, and tells the coordinator who to chase today and why.
 
 Built for the Hack2Skill *Future Health Digital Innovation Challenge*, track **[Population Health] Closing the Screening-to-Care Loop**.
